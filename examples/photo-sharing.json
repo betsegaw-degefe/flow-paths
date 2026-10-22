@@ -1,0 +1,252 @@
+{
+  "title": "How a photo travels",
+  "pageTitle": "Photo Paths",
+  "eyebrow": "Example · photo sharing",
+  "lede": "Three paths through one photo service: uploading a photo, sharing it with a friend, and the friend opening it.",
+  "columns": [
+    {
+      "label": "Phone"
+    },
+    {
+      "label": "Front door"
+    },
+    {
+      "label": "Checks"
+    },
+    {
+      "label": "Stored"
+    },
+    {
+      "label": "Viewing"
+    }
+  ],
+  "kinds": [
+    {
+      "id": "device",
+      "label": "On someone's phone",
+      "style": "strong"
+    },
+    {
+      "id": "ours",
+      "label": "Run by the photo service",
+      "style": "solid"
+    },
+    {
+      "id": "partner",
+      "label": "Run by an outside company",
+      "style": "dashed"
+    }
+  ],
+  "nodes": {
+    "app": {
+      "column": 0,
+      "row": 1,
+      "label": "Photo app",
+      "sub": "the owner's phone",
+      "kind": "device"
+    },
+    "upload": {
+      "column": 1,
+      "row": 1,
+      "label": "Upload API",
+      "sub": "signed requests",
+      "kind": "ours"
+    },
+    "scanner": {
+      "column": 2,
+      "row": 0,
+      "label": "Safety scan",
+      "sub": "malware · abuse",
+      "kind": "partner"
+    },
+    "resizer": {
+      "column": 2,
+      "row": 2,
+      "label": "Resizer",
+      "sub": "thumbnails · sizes",
+      "kind": "ours"
+    },
+    "rules": {
+      "column": 2,
+      "row": 3.4,
+      "label": "Sharing rules",
+      "sub": "who may see what",
+      "kind": "ours"
+    },
+    "store": {
+      "column": 3,
+      "row": 1,
+      "label": "Photo store",
+      "sub": "originals · sizes",
+      "kind": "ours"
+    },
+    "friend": {
+      "column": 4,
+      "row": 0,
+      "label": "Friend's app",
+      "sub": "an invited viewer",
+      "kind": "device"
+    },
+    "gateway": {
+      "column": 4,
+      "row": 2,
+      "label": "View gateway",
+      "sub": "check · log",
+      "kind": "ours"
+    }
+  },
+  "edges": {
+    "send": {
+      "from": "app",
+      "to": "upload",
+      "label": "upload"
+    },
+    "done": {
+      "from": "upload",
+      "to": "app",
+      "label": "uploaded"
+    },
+    "scan": {
+      "from": "upload",
+      "to": "scanner",
+      "label": "scan"
+    },
+    "resize": {
+      "from": "upload",
+      "to": "resizer",
+      "label": "make sizes"
+    },
+    "save": {
+      "from": "resizer",
+      "to": "store",
+      "label": "save"
+    },
+    "rule": {
+      "from": "upload",
+      "to": "rules",
+      "label": "sharing rule",
+      "labelAt": 0.64
+    },
+    "invite": {
+      "from": "rules",
+      "to": "gateway",
+      "label": "invite"
+    },
+    "check": {
+      "from": "gateway",
+      "to": "rules",
+      "label": "allowed?"
+    },
+    "fetch": {
+      "from": "store",
+      "to": "gateway",
+      "label": "photo"
+    },
+    "open": {
+      "from": "friend",
+      "to": "gateway",
+      "label": "open photo"
+    },
+    "show": {
+      "from": "gateway",
+      "to": "friend",
+      "label": "photo"
+    }
+  },
+  "paths": [
+    {
+      "id": "upload",
+      "name": "Upload path",
+      "tab": "Upload",
+      "color": "green",
+      "summary": "A photo leaves the phone, is checked, and is stored in every size it will be shown at.",
+      "steps": [
+        {
+          "edge": "send",
+          "title": "The owner uploads a photo",
+          "text": "The app sends the original photo over a signed request, so the service knows which account it belongs to."
+        },
+        {
+          "edge": "scan",
+          "title": "The photo is scanned",
+          "text": "An outside safety service checks the file for malware and abuse before anything else touches it. A photo that fails is refused."
+        },
+        {
+          "edge": "resize",
+          "title": "Smaller sizes are made",
+          "text": "The resizer makes a thumbnail and the sizes phones and screens ask for, so nobody downloads the full original to see a preview."
+        },
+        {
+          "edge": "save",
+          "title": "Everything is stored",
+          "text": "The original and its sizes are stored together. Nothing is shared yet: only the owner can see it."
+        },
+        {
+          "edge": "done",
+          "title": "The owner sees it in their album",
+          "text": "The app is told the upload finished and shows the photo in the owner's album."
+        }
+      ]
+    },
+    {
+      "id": "share",
+      "name": "Sharing path",
+      "tab": "Share",
+      "color": "rose",
+      "summary": "Only the owner decides who sees a photo, and that decision is a rule the service enforces.",
+      "steps": [
+        {
+          "edge": "send",
+          "title": "The owner shares with a friend",
+          "label": "share with Sam",
+          "text": "In the app, the owner picks a photo and a friend to share it with."
+        },
+        {
+          "edge": "rule",
+          "title": "A sharing rule is written",
+          "text": "The service records who may see which photo, and until when. The friend's app never writes rules itself."
+        },
+        {
+          "edge": "invite",
+          "title": "The gateway learns of the invitation",
+          "text": "The view gateway is told there is a new invitation for this friend."
+        },
+        {
+          "edge": "show",
+          "title": "The friend is invited",
+          "label": "invitation",
+          "text": "The friend's app shows the invitation, with the owner's name and a preview."
+        }
+      ]
+    },
+    {
+      "id": "view",
+      "name": "Viewing path",
+      "tab": "View",
+      "color": "blue",
+      "summary": "Every view is checked against the owner's rules and logged.",
+      "steps": [
+        {
+          "edge": "open",
+          "title": "The friend opens the photo",
+          "text": "The friend taps the invitation. Their app asks the view gateway for the photo."
+        },
+        {
+          "edge": "check",
+          "title": "The rule is checked",
+          "text": "The gateway asks the sharing rules whether this friend may see this photo now. If the owner removed the share, the answer is no."
+        },
+        {
+          "edge": "fetch",
+          "title": "The right size is fetched",
+          "text": "The gateway takes the size that fits the friend's screen from the store."
+        },
+        {
+          "edge": "show",
+          "title": "The friend sees the photo",
+          "text": "The photo is shown, and the view is logged so the owner can see who looked."
+        }
+      ]
+    }
+  ]
+}

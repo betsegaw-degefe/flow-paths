@@ -1,0 +1,162 @@
+{
+  "title": "Where an order goes",
+  "pageTitle": "Order Paths",
+  "eyebrow": "Example · online shop",
+  "lede": "Two paths through one shop: placing an order, and refunding it.",
+  "columns": [
+    {
+      "label": "Customer"
+    },
+    {
+      "label": "Shop"
+    },
+    {
+      "label": "Payments"
+    },
+    {
+      "label": "Warehouse"
+    }
+  ],
+  "kinds": [
+    {
+      "id": "ours",
+      "label": "Runs in the shop",
+      "style": "solid"
+    },
+    {
+      "id": "partner",
+      "label": "Run by a partner",
+      "style": "dashed"
+    },
+    {
+      "id": "customer",
+      "label": "On the customer's device",
+      "style": "strong"
+    }
+  ],
+  "nodes": {
+    "app": {
+      "column": 0,
+      "row": 1,
+      "label": "Shop app",
+      "sub": "phone or browser",
+      "kind": "customer"
+    },
+    "orders": {
+      "column": 1,
+      "row": 1,
+      "label": "Order service",
+      "sub": "cart · checkout",
+      "kind": "ours"
+    },
+    "support": {
+      "column": 1,
+      "row": 3.2,
+      "label": "Support desk",
+      "sub": "refund requests",
+      "kind": "ours"
+    },
+    "psp": {
+      "column": 2,
+      "row": 2.2,
+      "label": "Card processor",
+      "sub": "authorise · capture",
+      "kind": "partner"
+    },
+    "wms": {
+      "column": 3,
+      "row": 0,
+      "label": "Warehouse",
+      "sub": "pick · pack · ship",
+      "kind": "ours"
+    }
+  },
+  "edges": {
+    "checkout": {
+      "from": "app",
+      "to": "orders",
+      "label": "place order"
+    },
+    "pay": {
+      "from": "orders",
+      "to": "psp",
+      "label": "charge card"
+    },
+    "paid": {
+      "from": "psp",
+      "to": "orders",
+      "label": "payment result"
+    },
+    "ship": {
+      "from": "orders",
+      "to": "wms",
+      "label": "pick list"
+    },
+    "ask": {
+      "from": "app",
+      "to": "support",
+      "label": "refund request"
+    },
+    "approve": {
+      "from": "support",
+      "to": "orders",
+      "label": "approved refund"
+    }
+  },
+  "paths": [
+    {
+      "id": "order",
+      "name": "Order path",
+      "tab": "Order",
+      "color": "blue",
+      "summary": "A paid order turns into a parcel.",
+      "steps": [
+        {
+          "edge": "checkout",
+          "title": "The customer checks out",
+          "text": "The app sends the cart, the address and the chosen delivery option to the order service."
+        },
+        {
+          "edge": "pay",
+          "title": "The card is charged",
+          "text": "The order service asks the card processor to authorise the total."
+        },
+        {
+          "edge": "paid",
+          "title": "The payment comes back",
+          "text": "An approved payment confirms the order; a declined one returns the customer to checkout."
+        },
+        {
+          "edge": "ship",
+          "title": "The warehouse ships it",
+          "text": "A confirmed order becomes a pick list for the warehouse."
+        }
+      ]
+    },
+    {
+      "id": "refund",
+      "name": "Refund path",
+      "tab": "Refund",
+      "color": "amber",
+      "summary": "A refund is checked by a person before money moves.",
+      "steps": [
+        {
+          "edge": "ask",
+          "title": "The customer asks",
+          "text": "From the order page, the customer asks for a refund and says why."
+        },
+        {
+          "edge": "approve",
+          "title": "Support approves it",
+          "text": "A support agent checks the request against the returns policy."
+        },
+        {
+          "edge": "pay",
+          "title": "The money goes back",
+          "label": "refund card",
+          "text": "The order service tells the card processor to refund the original card."
+        }
+      ]
+    }
+  ]
+}
