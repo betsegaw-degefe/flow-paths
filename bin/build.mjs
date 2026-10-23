@@ -57,6 +57,7 @@ export function check(spec) {
     if (!ID.test(id)) err(at, "ids are letters, digits and dashes, starting with a letter");
     if (!str(n.label)) err(`${at}.label`, "required");
     else if (n.label.length > MAX_LABEL) warn(`${at}.label`, `"${n.label}" is ${n.label.length} characters; about ${MAX_LABEL} fit in a box`);
+    if (n.description != null && !str(n.description)) err(`${at}.description`, "must be text when given");
     if (n.sub != null && n.sub.length > MAX_SUB) warn(`${at}.sub`, `"${n.sub}" is ${n.sub.length} characters; about ${MAX_SUB} fit in a box`);
     if (!Number.isInteger(n.column) || !Array.isArray(cols) || n.column < 0 || n.column >= cols.length) err(`${at}.column`, `must be a column index from 0 to ${(cols || []).length - 1}`);
     const hasY = typeof n.y === "number", hasRow = typeof n.row === "number";
