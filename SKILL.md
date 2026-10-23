@@ -57,9 +57,11 @@ page; `bin/snapshot.mjs` screenshots every tab so you can look before handing it
   ],
 
   "nodes": {
-    "orders": { "column": 1, "row": 1, "label": "Order service", "sub": "cart · checkout", "kind": "ours" }
+    "orders": { "column": 1, "row": 1, "label": "Order service", "sub": "cart · checkout", "kind": "ours",
+                "description": "Takes the cart, checks stock and price, and turns it into an order." }
     // row: 0 is the top slot, each row is 95px; fractions are fine (1.5).
     // Or give "y" in diagram pixels instead of "row" (the top slot is y 100).
+    // description: optional; one to three plain sentences shown when the box is clicked.
   },
 
   "edges": {
@@ -93,6 +95,8 @@ page; `bin/snapshot.mjs` screenshots every tab so you can look before handing it
 - **Two-way traffic** between the same pair (request and reply) is two edges, `a→b` and `b→a`.
   They are split apart automatically. Never add a second edge in the same direction: reuse the
   edge and give each step its own `label`.
+- **Descriptions** say what the component is and does for this system, in plain words; they are
+  read when someone clicks the box, so they can carry detail the diagram has no room for.
 - **Short text.** Box names fit about 19 characters, subtitles about 26, edge labels about 22.
   The build warns past those.
 - **Crowded labels:** move one along its line with `labelAt` (for example 0.3 or 0.7), or move a
@@ -113,5 +117,8 @@ page; `bin/snapshot.mjs` screenshots every tab so you can look before handing it
 - It has light and dark themes and a switch in the corner; it follows the system theme until the
   reader picks one. Reduced-motion readers get the same page with no animation.
 - `#<path-id>` at the end of the URL opens that path's tab directly.
+- **Clicking a box** zooms the diagram onto it and its direct connections and opens a card with its
+  `description`, what it receives and sends, and the paths that use it. The card can be dragged;
+  Esc or a click on empty space closes it. Give every node a description for this to be useful.
 - **Present** (or F) switches to a full-screen layout for presenting: the title, tabs, diagram and
   current step only. Esc exits. Where the host blocks full screen, the same layout fills the window.

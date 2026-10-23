@@ -166,11 +166,46 @@
   .presenting h1 { font-size: 26px; }
   .presenting .eyebrow, .presenting .lede, .presenting .legend, .presenting .overview, .presenting .steps { display: none !important; }
   .presenting .stage { min-height: 0; display: flex; }
+  .presenting .passport { max-height: calc(100% - 24px); }
   .presenting #dia { width: 100%; height: 100%; min-width: 0 !important; max-width: none !important; }
   .presenting #walk { grid-template-columns: minmax(0, 1fr); }
   .presenting .now-card { padding: 14px 20px; gap: 6px; }
   .presenting .now-title { font-size: 21px; }
   .presenting .now-text { max-width: 110ch; }
+  /* Clicking a box zooms the diagram onto it and its connections, and opens its detail card. */
+  .stage { position: relative; }
+  .node { cursor: pointer; outline: none; }
+  .node.focus rect { stroke: var(--ink); stroke-width: 3; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ink) 35%, transparent)); }
+  .node:focus-visible rect { stroke: var(--ink); stroke-width: 2.5; }
+  .node.fdim, .edge.fdim, .elabel.fdim { opacity: var(--dim); }
+  .passport {
+    position: absolute; z-index: 3; width: min(320px, calc(100% - 24px)); max-height: calc(100% - 24px); overflow-y: auto;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18); padding: 16px 18px; display: grid; gap: 10px;
+  }
+  .pp-grip { height: 14px; margin: -10px -18px -4px; cursor: grab; touch-action: none; display: grid; place-items: center; }
+  .pp-grip::before { content: ""; width: 28px; height: 4px; background: radial-gradient(circle, var(--muted) 1px, transparent 1.4px) 0 0 / 5px 4px repeat-x; opacity: 0.7; }
+  .passport.dragging, .passport.dragging .pp-grip { cursor: grabbing; user-select: none; }
+  .pp-head { display: flex; align-items: start; justify-content: space-between; gap: 10px; }
+  .pp-kind { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0; }
+  .pp-title { font-family: var(--font-display); font-weight: 700; font-size: 20px; line-height: 1.15; margin: 2px 0 0; }
+  .pp-sub { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); margin: 0; }
+  .pp-desc { margin: 0; font-size: 14px; }
+  .pp-close { background: transparent; border: 0; color: var(--muted); font-size: 20px; line-height: 1; padding: 2px 6px; border-radius: 6px; cursor: pointer; }
+  .pp-close:hover { color: var(--ink); }
+  .pp-sec { display: grid; gap: 4px; }
+  .pp-sec h4 { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0; font-weight: 500; }
+  .pp-link {
+    display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left; cursor: pointer;
+    background: transparent; border: 0; border-radius: 6px; padding: 3px 6px; margin-left: -6px;
+    font: 14px/1.35 var(--font-body); color: var(--ink);
+  }
+  .pp-link:hover { background: var(--rail); }
+  .pp-link span { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+  .pp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pp-chip { --c: var(--all); font: 600 12.5px/1 var(--font-body); color: var(--ink); background: transparent; border: 1.5px solid var(--c); border-radius: 999px; padding: 6px 10px; cursor: pointer; }
+  .pp-chip:hover { background: var(--rail); }
+  .pp-close:focus-visible, .pp-link:focus-visible, .pp-chip:focus-visible { outline: 2px solid var(--muted); outline-offset: 1px; }
 </style>
 </head>
 <body>
@@ -200,6 +235,21 @@
       <g id="labels"></g>
       <g id="comets"></g>
     </svg>
+    <div class="passport" id="passport" role="dialog" aria-labelledby="pp-title" hidden>
+      <div class="pp-grip" id="pp-grip" title="Drag to move"></div>
+      <div class="pp-head">
+        <div>
+          <p class="pp-kind" id="pp-kind"></p>
+          <h3 class="pp-title" id="pp-title"></h3>
+        </div>
+        <button class="pp-close" id="pp-close" type="button" aria-label="Close details">&times;</button>
+      </div>
+      <p class="pp-sub" id="pp-sub"></p>
+      <p class="pp-desc" id="pp-desc"></p>
+      <div class="pp-sec" id="pp-in"><h4>Receives from</h4></div>
+      <div class="pp-sec" id="pp-out"><h4>Sends to</h4></div>
+      <div class="pp-sec" id="pp-paths"><h4>Part of</h4><div class="pp-chips" id="pp-chips"></div></div>
+    </div>
   </div>
 
   <div class="legend" id="legend" aria-label="Legend"></div>
@@ -223,7 +273,7 @@
 
 <script>
 (() => {
-  const spec = {"title":"Where an order goes","pageTitle":"Order Paths","eyebrow":"Example · online shop","lede":"Two paths through one shop: placing an order, and refunding it.","columns":[{"label":"Customer"},{"label":"Shop"},{"label":"Payments"},{"label":"Warehouse"}],"kinds":[{"id":"ours","label":"Runs in the shop","style":"solid"},{"id":"partner","label":"Run by a partner","style":"dashed"},{"id":"customer","label":"On the customer's device","style":"strong"}],"nodes":{"app":{"column":0,"row":1,"label":"Shop app","sub":"phone or browser","kind":"customer"},"orders":{"column":1,"row":1,"label":"Order service","sub":"cart · checkout","kind":"ours"},"support":{"column":1,"row":3.2,"label":"Support desk","sub":"refund requests","kind":"ours"},"psp":{"column":2,"row":2.2,"label":"Card processor","sub":"authorise · capture","kind":"partner"},"wms":{"column":3,"row":0,"label":"Warehouse","sub":"pick · pack · ship","kind":"ours"}},"edges":{"checkout":{"from":"app","to":"orders","label":"place order"},"pay":{"from":"orders","to":"psp","label":"charge card"},"paid":{"from":"psp","to":"orders","label":"payment result"},"ship":{"from":"orders","to":"wms","label":"pick list"},"ask":{"from":"app","to":"support","label":"refund request"},"approve":{"from":"support","to":"orders","label":"approved refund"}},"paths":[{"id":"order","name":"Order path","tab":"Order","color":"blue","summary":"A paid order turns into a parcel.","steps":[{"edge":"checkout","title":"The customer checks out","text":"The app sends the cart, the address and the chosen delivery option to the order service."},{"edge":"pay","title":"The card is charged","text":"The order service asks the card processor to authorise the total."},{"edge":"paid","title":"The payment comes back","text":"An approved payment confirms the order; a declined one returns the customer to checkout."},{"edge":"ship","title":"The warehouse ships it","text":"A confirmed order becomes a pick list for the warehouse."}]},{"id":"refund","name":"Refund path","tab":"Refund","color":"amber","summary":"A refund is checked by a person before money moves.","steps":[{"edge":"ask","title":"The customer asks","text":"From the order page, the customer asks for a refund and says why."},{"edge":"approve","title":"Support approves it","text":"A support agent checks the request against the returns policy."},{"edge":"pay","title":"The money goes back","label":"refund card","text":"The order service tells the card processor to refund the original card."}]}]};
+  const spec = {"title":"Where an order goes","pageTitle":"Order Paths","eyebrow":"Example · online shop","lede":"Two paths through one shop: placing an order, and refunding it.","columns":[{"label":"Customer"},{"label":"Shop"},{"label":"Payments"},{"label":"Warehouse"}],"kinds":[{"id":"ours","label":"Runs in the shop","style":"solid"},{"id":"partner","label":"Run by a partner","style":"dashed"},{"id":"customer","label":"On the customer's device","style":"strong"}],"nodes":{"app":{"column":0,"row":1,"label":"Shop app","sub":"phone or browser","kind":"customer","description":"The customer's shop app, on a phone or in a browser."},"orders":{"column":1,"row":1,"label":"Order service","sub":"cart · checkout","kind":"ours","description":"Takes the cart, checks stock and price, and turns it into an order. It also handles refunds."},"support":{"column":1,"row":3.2,"label":"Support desk","sub":"refund requests","kind":"ours","description":"Where refund requests are checked by a person against the returns policy."},"psp":{"column":2,"row":2.2,"label":"Card processor","sub":"authorise · capture","kind":"partner","description":"The card processor, run by a payment partner. It authorises charges and sends refunds back to the card."},"wms":{"column":3,"row":0,"label":"Warehouse","sub":"pick · pack · ship","kind":"ours","description":"The warehouse system. A confirmed order becomes a pick list, then a parcel."}},"edges":{"checkout":{"from":"app","to":"orders","label":"place order"},"pay":{"from":"orders","to":"psp","label":"charge card"},"paid":{"from":"psp","to":"orders","label":"payment result"},"ship":{"from":"orders","to":"wms","label":"pick list"},"ask":{"from":"app","to":"support","label":"refund request"},"approve":{"from":"support","to":"orders","label":"approved refund"}},"paths":[{"id":"order","name":"Order path","tab":"Order","color":"blue","summary":"A paid order turns into a parcel.","steps":[{"edge":"checkout","title":"The customer checks out","text":"The app sends the cart, the address and the chosen delivery option to the order service."},{"edge":"pay","title":"The card is charged","text":"The order service asks the card processor to authorise the total."},{"edge":"paid","title":"The payment comes back","text":"An approved payment confirms the order; a declined one returns the customer to checkout."},{"edge":"ship","title":"The warehouse ships it","text":"A confirmed order becomes a pick list for the warehouse."}]},{"id":"refund","name":"Refund path","tab":"Refund","color":"amber","summary":"A refund is checked by a person before money moves.","steps":[{"edge":"ask","title":"The customer asks","text":"From the order page, the customer asks for a refund and says why."},{"edge":"approve","title":"Support approves it","text":"A support agent checks the request against the returns policy."},{"edge":"pay","title":"The money goes back","label":"refund card","text":"The order service tells the card processor to refund the original card."}]}]};
 
   const W = 160, H = 62, COL_W = 250, FIRST_X = 120, ROW_H = 95, FIRST_Y = 100;
   const $ = id => document.getElementById(id);
@@ -286,7 +336,7 @@
   for (const id in nodes) {
     const n = nodes[id];
     const style = n.kind && kinds[n.kind] ? kinds[n.kind].style || "solid" : "solid";
-    const g = el("g", { class: `node style-${style}`, "data-id": id }, $("nodes"));
+    const g = el("g", { class: `node style-${style}`, "data-id": id, tabindex: 0, role: "button", "aria-label": `${n.label}: details` }, $("nodes"));
     el("rect", { x: n.x - W / 2, y: n.y - H / 2, width: W, height: H, rx: 10 }, g);
     el("text", { x: n.x, y: n.sub ? n.y - 4 : n.y + 5, "text-anchor": "middle", class: "nl" }, g).textContent = n.label;
     if (n.sub) el("text", { x: n.x, y: n.y + 15, "text-anchor": "middle", class: "ns" }, g).textContent = n.sub;
@@ -475,6 +525,8 @@
   }
   function drawComet(c, edgeId, t, color, strength) {
     const x = edgeEls[edgeId];
+    // No motion on a line dimmed behind an open detail card.
+    if (x.path.classList.contains("fdim")) { c.g.style.display = "none"; return; }
     c.g.style.display = "";
     c.parts.forEach((pt, j) => {
       const tt = Math.max(0, Math.min(1, t - j * 0.035));
@@ -558,6 +610,173 @@
     if (ev.key === "f" || ev.key === "F") togglePresenting();
     if (ev.key === "Escape" && root.classList.contains("presenting") && !document.fullscreenElement) setPresenting(false);
   });
+  // Detail card: what a box is, what it is connected to, and which paths use it.
+  const kindLabel = {};
+  for (const k in kinds) kindLabel[k] = kinds[k].label;
+  const stage = document.querySelector(".stage");
+  const passport = $("passport");
+  let focused = null, framed = [];
+  // Where the reader dragged the card, relative to the visible part of the diagram; kept while the page is open.
+  let cardAt = null;
+
+  const home = svg.getAttribute("viewBox").split(/[ ,]+/).map(Number);
+  let view = home.slice(), camera = 0;
+  // A view that is not four finite numbers, with a positive size, would collapse the drawing; it is skipped.
+  const setView = v => {
+    if (!v.every(Number.isFinite) || v[2] <= 0 || v[3] <= 0) return;
+    view = v; svg.setAttribute("viewBox", v.map(n => n.toFixed(1)).join(" "));
+  };
+  function moveCamera(target) {
+    cancelAnimationFrame(camera);
+    if (reduced) { setView(target); return; }
+    const from = view.slice(), MS = 450;
+    let t0 = null;
+    const step = now => {
+      if (t0 === null) t0 = now;
+      const t = Math.min(1, (now - t0) / MS), k = ease(t);
+      setView(from.map((v, i) => v + (target[i] - v) * k));
+      if (t < 1) camera = requestAnimationFrame(step);
+    };
+    camera = requestAnimationFrame(step);
+  }
+
+  // The view that fits the given boxes into the part of the diagram the card does not cover.
+  function viewFor(ids) {
+    const xs = ids.map(i => nodes[i].x), ys = ids.map(i => nodes[i].y), pad = 46;
+    const minX = Math.min(...xs) - W / 2 - pad, maxX = Math.max(...xs) + W / 2 + pad;
+    const minY = Math.min(...ys) - H / 2 - pad, maxY = Math.max(...ys) + H / 2 + pad;
+    // The drawing keeps the diagram's proportions inside the element, centred if the element is wider or taller.
+    const aspect = home[2] / home[3];
+    const box = svg.getBoundingClientRect();
+    const rw = Math.min(box.width, box.height * aspect), rh = rw / aspect;
+    const ox = (box.width - rw) / 2;
+    const cardLeft = passport.offsetLeft - stage.scrollLeft - ox, cardRight = cardLeft + passport.offsetWidth;
+    let coverL = 0, coverR = 0;
+    if ((cardLeft + cardRight) / 2 < rw / 2) coverL = Math.max(0, cardRight + 16);
+    else coverR = Math.max(0, rw - cardLeft + 16);
+    const free = Math.max(rw * 0.3, rw - coverL - coverR);
+    const scale = Math.min(free / (maxX - minX), rh / (maxY - minY), (rw / home[2]) * 2.2);
+    const w = rw / scale, h = rh / scale;
+    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    return [cx - (coverL + free / 2) / scale, cy - h / 2, w, h];
+  }
+
+  function clearFocus() {
+    if (!focused) return;
+    nodeEls[focused].classList.remove("focus");
+    document.querySelectorAll(".fdim").forEach(n => n.classList.remove("fdim"));
+    passport.hidden = true;
+    focused = null;
+    moveCamera(home);
+  }
+
+  function linkTo(parent, nodeId, label, arrow) {
+    const b = document.createElement("button");
+    b.className = "pp-link"; b.type = "button";
+    b.append(`${arrow} ${nodes[nodeId].label}`);
+    const sp = document.createElement("span"); sp.textContent = label; b.appendChild(sp);
+    b.addEventListener("click", () => focusNode(nodeId));
+    parent.appendChild(b);
+  }
+
+  function focusNode(id) {
+    if (focused) {
+      nodeEls[focused].classList.remove("focus");
+      document.querySelectorAll(".fdim").forEach(n => n.classList.remove("fdim"));
+    }
+    focused = id;
+    const n = nodes[id];
+    const g = nodeEls[id];
+    // Drawn last, so the enlarged box sits above its neighbours.
+    g.parentNode.appendChild(g);
+    g.classList.add("focus");
+
+    // Keep the box, its neighbours and the edges between them; dim the rest.
+    const keep = new Set([id]);
+    for (const eid in edges) {
+      const e = edges[eid];
+      const touches = e.from === id || e.to === id;
+      if (touches) { keep.add(e.from); keep.add(e.to); }
+      else { edgeEls[eid].path.classList.add("fdim"); edgeEls[eid].lg.classList.add("fdim"); }
+    }
+    for (const nid in nodeEls) if (!keep.has(nid)) nodeEls[nid].classList.add("fdim");
+
+    $("pp-kind").textContent = kindLabel[n.kind] || "";
+    $("pp-title").textContent = n.label;
+    $("pp-sub").textContent = n.sub || "";
+    $("pp-desc").textContent = n.description || "";
+    for (const [box, dir] of [["pp-in", "to"], ["pp-out", "from"]]) {
+      const sec = $(box);
+      sec.querySelectorAll(".pp-link").forEach(x => x.remove());
+      const list = Object.values(edges).filter(e => e[dir] === id);
+      list.forEach(e => linkTo(sec, dir === "to" ? e.from : e.to, e.label, dir === "to" ? "←" : "→"));
+      sec.hidden = !list.length;
+    }
+    const chips = $("pp-chips");
+    chips.innerHTML = "";
+    const using = Object.keys(paths).filter(k => pathNodes[k].has(id));
+    using.forEach(k => {
+      const c = document.createElement("button");
+      c.className = "pp-chip"; c.type = "button"; c.textContent = paths[k].name;
+      c.style.setProperty("--c", `var(--p-${k})`);
+      c.addEventListener("click", () => { clearFocus(); select(k); });
+      chips.appendChild(c);
+    });
+    $("pp-paths").hidden = !using.length;
+
+    // The card sits where the reader left it, or in the top-left corner; the camera frames the box beside it.
+    passport.hidden = false;
+    placeCard(cardAt ? cardAt.left : 12, cardAt ? cardAt.top : 12);
+    framed = [...keep];
+    moveCamera(viewFor(framed));
+  }
+
+  for (const id in nodeEls) {
+    const g = nodeEls[id];
+    g.addEventListener("click", ev => { ev.stopPropagation(); focused === id ? clearFocus() : focusNode(id); });
+    g.addEventListener("keydown", ev => {
+      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); focused === id ? clearFocus() : focusNode(id); }
+    });
+  }
+  $("pp-close").addEventListener("click", clearFocus);
+
+  // Kept inside the diagram's visible area.
+  function placeCard(left, top) {
+    const maxL = stage.clientWidth - passport.offsetWidth - 4, maxT = stage.clientHeight - passport.offsetHeight - 4;
+    const l = Math.max(4, Math.min(left, maxL)), t = Math.max(4, Math.min(top, maxT));
+    passport.style.left = `${stage.scrollLeft + l}px`;
+    passport.style.top = `${t}px`;
+    return { left: l, top: t };
+  }
+  const grip = $("pp-grip");
+  grip.addEventListener("pointerdown", ev => {
+    ev.preventDefault();
+    grip.setPointerCapture(ev.pointerId);
+    passport.classList.add("dragging");
+    const startX = ev.clientX, startY = ev.clientY;
+    const startL = passport.offsetLeft - stage.scrollLeft, startT = passport.offsetTop;
+    const move = e => { cardAt = placeCard(startL + e.clientX - startX, startT + e.clientY - startY); };
+    const up = () => {
+      grip.removeEventListener("pointermove", move);
+      grip.removeEventListener("pointerup", up);
+      grip.removeEventListener("pointercancel", up);
+      passport.classList.remove("dragging");
+      if (focused) moveCamera(viewFor(framed));
+    };
+    grip.addEventListener("pointermove", move);
+    grip.addEventListener("pointerup", up);
+    grip.addEventListener("pointercancel", up);
+  });
+  svg.addEventListener("click", clearFocus);
+  passport.addEventListener("click", ev => ev.stopPropagation());
+  // Esc closes the card first; a second Esc then leaves presenting.
+  document.addEventListener("keydown", ev => {
+    if (ev.key === "Escape" && focused) { clearFocus(); ev.stopImmediatePropagation(); }
+  }, true);
+  window.addEventListener("resize", () => { if (focused) focusNode(focused); });
+  // Presenting changes the diagram's size, so the camera is framed again.
+  new MutationObserver(() => { if (focused) requestAnimationFrame(() => focusNode(focused)); })
+    .observe(root, { attributes: true, attributeFilter: ["class"] });
 
   const start = (location.hash || "").slice(1);
   if (paths[start]) select(start); else paint();

@@ -43,56 +43,64 @@
       "row": 1,
       "label": "Photo app",
       "sub": "the owner's phone",
-      "kind": "device"
+      "kind": "device",
+      "description": "The owner's photo app. It takes the photo, uploads it, and is where the owner decides who to share it with."
     },
     "upload": {
       "column": 1,
       "row": 1,
       "label": "Upload API",
       "sub": "signed requests",
-      "kind": "ours"
+      "kind": "ours",
+      "description": "The service's front door. Every request from an app is signed, so the service knows which account it comes from."
     },
     "scanner": {
       "column": 2,
       "row": 0,
       "label": "Safety scan",
       "sub": "malware · abuse",
-      "kind": "partner"
+      "kind": "partner",
+      "description": "An outside safety service. It checks each new file for malware and abuse before anything else touches it."
     },
     "resizer": {
       "column": 2,
       "row": 2,
       "label": "Resizer",
       "sub": "thumbnails · sizes",
-      "kind": "ours"
+      "kind": "ours",
+      "description": "Makes a thumbnail and the sizes screens ask for, so nobody downloads the full original just to see a preview."
     },
     "rules": {
       "column": 2,
       "row": 3.4,
       "label": "Sharing rules",
       "sub": "who may see what",
-      "kind": "ours"
+      "kind": "ours",
+      "description": "Records who may see which photo, and until when. Only the owner, through the service, can change them."
     },
     "store": {
       "column": 3,
       "row": 1,
       "label": "Photo store",
       "sub": "originals · sizes",
-      "kind": "ours"
+      "kind": "ours",
+      "description": "Keeps each original and its sizes. Nothing in it is visible to anyone until a sharing rule allows it."
     },
     "friend": {
       "column": 4,
       "row": 0,
       "label": "Friend's app",
       "sub": "an invited viewer",
-      "kind": "device"
+      "kind": "device",
+      "description": "The app of someone the owner shared with. It can only ask to see photos; it never changes the rules."
     },
     "gateway": {
       "column": 4,
       "row": 2,
       "label": "View gateway",
       "sub": "check · log",
-      "kind": "ours"
+      "kind": "ours",
+      "description": "Every view goes through here. It checks the sharing rules, fetches the right size, and logs who looked."
     }
   },
   "edges": {

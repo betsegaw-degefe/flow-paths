@@ -40,35 +40,40 @@
       "row": 1,
       "label": "Shop app",
       "sub": "phone or browser",
-      "kind": "customer"
+      "kind": "customer",
+      "description": "The customer's shop app, on a phone or in a browser."
     },
     "orders": {
       "column": 1,
       "row": 1,
       "label": "Order service",
       "sub": "cart · checkout",
-      "kind": "ours"
+      "kind": "ours",
+      "description": "Takes the cart, checks stock and price, and turns it into an order. It also handles refunds."
     },
     "support": {
       "column": 1,
       "row": 3.2,
       "label": "Support desk",
       "sub": "refund requests",
-      "kind": "ours"
+      "kind": "ours",
+      "description": "Where refund requests are checked by a person against the returns policy."
     },
     "psp": {
       "column": 2,
       "row": 2.2,
       "label": "Card processor",
       "sub": "authorise · capture",
-      "kind": "partner"
+      "kind": "partner",
+      "description": "The card processor, run by a payment partner. It authorises charges and sends refunds back to the card."
     },
     "wms": {
       "column": 3,
       "row": 0,
       "label": "Warehouse",
       "sub": "pick · pack · ship",
-      "kind": "ours"
+      "kind": "ours",
+      "description": "The warehouse system. A confirmed order becomes a pick list, then a parcel."
     }
   },
   "edges": {
