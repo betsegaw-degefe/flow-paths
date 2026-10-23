@@ -178,6 +178,8 @@
   .node.focus rect { stroke: var(--ink); stroke-width: 3; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ink) 35%, transparent)); }
   .node:focus-visible rect { stroke: var(--ink); stroke-width: 2.5; }
   .node.fdim, .edge.fdim, .elabel.fdim { opacity: var(--dim); }
+  /* While a card is open, its highlighting replaces the path tab's: the box and its connections show in full. */
+  #dia.focusing .node.dim:not(.fdim), #dia.focusing .edge.dim:not(.fdim), #dia.focusing .elabel.dim:not(.fdim) { opacity: 1; }
   .passport {
     position: absolute; z-index: 3; width: min(320px, calc(100% - 24px)); max-height: calc(100% - 24px); overflow-y: auto;
     background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 12px;
@@ -666,6 +668,7 @@
     nodeEls[focused].classList.remove("focus");
     document.querySelectorAll(".fdim").forEach(n => n.classList.remove("fdim"));
     passport.hidden = true;
+    svg.classList.remove("focusing");
     focused = null;
     moveCamera(home);
   }
@@ -687,9 +690,10 @@
     focused = id;
     const n = nodes[id];
     const g = nodeEls[id];
-    // Drawn last, so the enlarged box sits above its neighbours.
+    // Drawn last, so the highlighted box sits above its neighbours.
     g.parentNode.appendChild(g);
     g.classList.add("focus");
+    svg.classList.add("focusing");
 
     // Keep the box, its neighbours and the edges between them; dim the rest.
     const keep = new Set([id]);
