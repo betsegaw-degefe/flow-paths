@@ -113,3 +113,5 @@ page; `bin/snapshot.mjs` screenshots every tab so you can look before handing it
 - It has light and dark themes and a switch in the corner; it follows the system theme until the
   reader picks one. Reduced-motion readers get the same page with no animation.
 - `#<path-id>` at the end of the URL opens that path's tab directly.
+- **Present** (or F) switches to a full-screen layout for presenting: the title, tabs, diagram and
+  current step only. Esc exits. Where the host blocks full screen, the same layout fills the window.

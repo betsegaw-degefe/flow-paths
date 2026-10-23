@@ -61,6 +61,7 @@ The spec format, layout advice and writing guidance are in [`SKILL.md`](SKILL.md
 
 - Tabs for **All** and each path; `#<path-id>` in the URL opens a path directly.
 - Previous, Next, Play/Pause, a clickable step list, and the left and right arrow keys.
+- **Present** (or the F key) for full screen: just the title, tabs, diagram and current step. Esc exits.
 - Light and dark themes, following the system until the reader chooses.
 - Works at phone width; the diagram scrolls inside its own frame.
 - Respects reduced motion: no animation, same content.

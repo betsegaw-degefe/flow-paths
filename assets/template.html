@@ -53,7 +53,6 @@
 
   /* A quiet switch in the corner, kept apart from the path tabs. */
   .theme {
-    position: absolute; top: -8px; right: 0;
     display: inline-flex; align-items: center; gap: 8px;
     font: 500 13px/1 var(--font-body); color: var(--muted);
     background: transparent; border: 0; border-radius: 8px; padding: 6px 4px; cursor: pointer;
@@ -150,12 +149,34 @@
   .sw { width: 22px; height: 14px; border-radius: 4px; border: 1.5px solid var(--line); background: var(--surface); }
   .sw.style-strong { border-color: var(--muted); }
   .sw.style-dashed { border-style: dashed; }
+  /* The corner controls: presentation mode and the theme switch, kept apart from the path tabs. */
+  .corner { position: absolute; top: -8px; right: 0; display: flex; align-items: center; gap: 14px; z-index: 2; }
+  .pic { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .eyebrow { padding-right: 200px; }
+
+  /* Presenting: the diagram fills the screen; only the title, tabs and the current step stay. */
+  html.presenting body { height: 100dvh; overflow: hidden; padding-block: 14px; }
+  .presenting .wrap { max-width: none; height: 100%; grid-template-rows: auto minmax(0, 1fr) auto; gap: 12px; }
+  .presenting header { padding-top: 26px; }
+  .presenting h1 { font-size: 26px; }
+  .presenting .eyebrow, .presenting .lede, .presenting .legend, .presenting .overview, .presenting .steps { display: none !important; }
+  .presenting .stage { min-height: 0; display: flex; }
+  .presenting #dia { width: 100%; height: 100%; min-width: 0 !important; max-width: none !important; }
+  .presenting #walk { grid-template-columns: minmax(0, 1fr); }
+  .presenting .now-card { padding: 14px 20px; gap: 6px; }
+  .presenting .now-title { font-size: 21px; }
+  .presenting .now-text { max-width: 110ch; }
 </style>
 
 <div class="wrap">
+  <div class="corner">
+    <button class="theme" id="present" type="button" aria-pressed="false" title="Present full screen (F)">
+      <svg class="pic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg><span id="present-label">Present</span>
+    </button>
   <button class="theme" id="theme" type="button" aria-label="Dark mode" aria-pressed="false">
-    <span class="track"><span class="knob"><svg class="ic sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3"/></svg><svg class="ic moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z"/></svg></span></span><span id="theme-label">Light</span>
-  </button>
+      <span class="track"><span class="knob"><svg class="ic sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3"/></svg><svg class="ic moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z"/></svg></span></span><span id="theme-label">Light</span>
+    </button>
+  </div>
   <header>
     <div>
       <p class="eyebrow" id="eyebrow"></p>
@@ -503,6 +524,34 @@
   });
   sysDark.addEventListener("change", labelTheme);
   labelTheme();
+
+  // Presenting: full screen where the browser allows it; the layout change alone works anywhere.
+  const presentBtn = $("present");
+  let usedFullscreen = false;
+  const setPresenting = on => {
+    root.classList.toggle("presenting", on);
+    presentBtn.setAttribute("aria-pressed", String(on));
+    $("present-label").textContent = on ? "Exit" : "Present";
+  };
+  const togglePresenting = () => {
+    const on = !root.classList.contains("presenting");
+    setPresenting(on);
+    if (on && root.requestFullscreen) {
+      root.requestFullscreen().then(() => { usedFullscreen = true; }).catch(() => {});
+    } else if (!on && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+  presentBtn.addEventListener("click", togglePresenting);
+  // Leaving full screen with the browser's own Esc also ends presenting.
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement && usedFullscreen) { usedFullscreen = false; setPresenting(false); }
+  });
+  document.addEventListener("keydown", ev => {
+    if (ev.target.closest("input, textarea") || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.key === "f" || ev.key === "F") togglePresenting();
+    if (ev.key === "Escape" && root.classList.contains("presenting") && !document.fullscreenElement) setPresenting(false);
+  });
 
   const start = (location.hash || "").slice(1);
   if (paths[start]) select(start); else paint();
